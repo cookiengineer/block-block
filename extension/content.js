@@ -51,129 +51,141 @@ function removePointerEvents(element) {
 
 }
 
-// Block event blockers
-(() => {
+async function getEnabled() {
+	let result = await browser.storage.local.get("enabled");
+	return result.enabled === true;
+}
 
-	const blocked_events = [
-		"wheel",
-		"mousewheel",
-		"touchmove",
-		"contextmenu"
-	];
 
-	blocked_events.forEach((event_name) => {
+getEnabled().then((enabled) => {
 
-		window.addEventListener(event_name, (event) => {
+	if (enabled === true) {
 
-			// Allows default behavior
-			event.stopImmediatePropagation();
+		// Block event blockers
+		(() => {
 
-		}, {
-			capture: true,
-			passive: false
-		});
+			const blocked_events = [
+				"wheel",
+				"mousewheel",
+				"touchmove",
+				"contextmenu"
+			];
 
-	});
+			blocked_events.forEach((event_name) => {
 
-	const original_addEventListener = EventTarget.prototype.addEventListener;
+				window.addEventListener(event_name, (event) => {
 
-	EventTarget.prototype.addEventListener = function(type, listener, options) {
+					// Allows default behavior
+					event.stopImmediatePropagation();
 
-		if (blocked_events.includes(type) === true) {
+				}, {
+					capture: true,
+					passive: false
+				});
 
-			const wrapped_listener = function(event) {
+			});
 
-				event.preventDefault = function() {
-					// Do Nothing
-				};
+			const original_addEventListener = EventTarget.prototype.addEventListener;
 
-				return listener.apply(this, arguments);
+			EventTarget.prototype.addEventListener = function(type, listener, options) {
+
+				if (blocked_events.includes(type) === true) {
+
+					const wrapped_listener = function(event) {
+
+						event.preventDefault = function() {
+							// Do Nothing
+						};
+
+						return listener.apply(this, arguments);
+
+					};
+
+					return original_addEventListener.call(this, type, wrapped_listener, options);
+
+				} else {
+					return original_addEventListener.call(this, type, listener, options);
+				}
 
 			};
 
-			return original_addEventListener.call(this, type, wrapped_listener, options);
+		})();
 
-		} else {
-			return original_addEventListener.call(this, type, listener, options);
-		}
+		document.addEventListener("DOMContentLoaded", () => {
 
-	};
+			document.documentElement.appendChild(Object.assign(document.createElement("style"), {
+				textContent: [
+					"* {",
+					"\toverflow: auto !important;",
+					"\tfilter: none !important;",
+					"\tbackdrop-filter: none !important;",
+					"\tpointer-events: auto !important;",
+					"}"
+				].join("\n")
+			}));
 
-})();
+			// Remove static CSS properties
+			document.querySelectorAll("*").forEach((element) => {
 
-document.addEventListener("DOMContentLoaded", () => {
+				removeOverflow(element);
+				removeFilters(element);
+				removePointerEvents(element);
 
-	document.documentElement.appendChild(Object.assign(document.createElement("style"), {
-		textContent: [
-			"* {",
-			"\toverflow: auto !important;",
-			"\tfilter: none !important;",
-			"\tbackdrop-filter: none !important;",
-			"\tpointer-events: auto !important;",
-			"}"
-		].join("\n")
-	}));
+			});
 
-	// Remove static CSS properties
-	document.querySelectorAll("*").forEach((element) => {
+		});
 
-		removeOverflow(element);
-		removeFilters(element);
-		removePointerEvents(element);
+		// Remove dynamic CSS properties
+		new MutationObserver((mutations) => {
 
-	});
+			for (const mutation of mutations) {
 
-});
+				if (mutation.type === "attributes") {
+					removeOverflow(mutation.target);
+					removeFilters(mutation.target);
+					removePointerEvents(mutation.target);
+				}
 
-// Remove dynamic CSS properties
-new MutationObserver((mutations) => {
-
-	for (const mutation of mutations) {
-
-		if (mutation.type === "attributes") {
-			removeOverflow(mutation.target);
-			removeFilters(mutation.target);
-			removePointerEvents(mutation.target);
-		}
-
-	}
-
-}).observe(document.documentElement, {
-	attributes:      true,
-	subtree:         true,
-	attributeFilter: ["style", "class"]
-});
-
-// Remove dynamic style elements
-new MutationObserver((mutations) => {
-
-	for (const mutation of mutations) {
-
-		for (const node of mutation.addedNodes) {
-
-			if (node.nodeName === "STYLE") {
-				fixStylesheet(node);
 			}
 
-		}
+		}).observe(document.documentElement, {
+			attributes:      true,
+			subtree:         true,
+			attributeFilter: ["style", "class"]
+		});
+
+		// Remove dynamic style elements
+		new MutationObserver((mutations) => {
+
+			for (const mutation of mutations) {
+
+				for (const node of mutation.addedNodes) {
+
+					if (node.nodeName === "STYLE") {
+						fixStylesheet(node);
+					}
+
+				}
+
+			}
+
+		}).observe(document.documentElement, {
+			childList: true,
+			subtree:   true
+		});
+
+
+
+		// Remove dynamic event blockers
+		Object.defineProperty(document, "oncontextmenu", {
+			set() {
+				// Do Nothing
+			},
+			get() {
+				return null;
+			}
+		});
 
 	}
 
-}).observe(document.documentElement, {
-	childList: true,
-	subtree:   true
 });
-
-
-
-// Remove dynamic event blockers
-Object.defineProperty(document, "oncontextmenu", {
-	set() {
-		// Do Nothing
-	},
-	get() {
-		return null;
-	}
-});
-
-
