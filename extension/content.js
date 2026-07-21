@@ -48,9 +48,7 @@ function removeOverflow(element, computed) {
 
 	const computed_style = getComputedStyle(element);
 
-	if (element.style["overflow"] === "hidden") {
-		element.style.setProperty("overflow", "auto", "important");
-	} else if computed_style.getPropertyValue("overflow") === "hidden") {
+	if (element.style["overflow"] === "hidden" || computed_style.getPropertyValue("overflow") === "hidden") {
 		element.style.setProperty("overflow", "auto", "important");
 	}
 
