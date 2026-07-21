@@ -18,6 +18,8 @@ clicks on Accept in their Consent banners.
 - Blocks `filter: <filter>` styles
 - Blocks `backdrop-filter: <filter>` styles
 - Blocks `pointer-events: none` styles
+- Blocks `touch-action: none` styles
+- Blocks `visibility: none` styles
 
 
 ### Motivation

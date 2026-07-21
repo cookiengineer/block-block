@@ -6,12 +6,39 @@ function fixStylesheet(style_element) {
 		let text_content = style_element.textContent;
 
 		text_content = text_content.replace(/overflow\s*:\s*hidden\s*!important/g, 'overflow: auto !important');
+
+		// Filters
 		text_content = text_content.replace(/backdrop-filter\s*:[^;]+;/g, '');
 		text_content = text_content.replace(/filter\s*:[^;]+;/g, '');
+
+		// Pointer Events
 		text_content = text_content.replace(/pointer-events\s*:\s*none\s*!important/g, 'pointer-events: auto !important');
 		text_content = text_content.replace(/pointer-events\s*:\s*none\s*;/g, 'pointer-events: auto !important;');
 
+		// Touch Actions
+		text_content = text_content.replace(/touch-action\s*:\s*none\s*!important/g, 'touch-action: auto !important');
+		text_content = text_content.replace(/touch-action\s*:\s*none\s*;/g, 'touch-action: auto !important;');
+
+		// Visibility
+		text_content = text_content.replace(/visibility\s*:\s*hidden\s*!important/g, 'visibility: visible !important');
+		text_content = text_content.replace(/visibility\s*:\s*hidden\s*;/g, 'visibility: visible !important;');
+
 		style_element.textContent = text_content;
+
+	}
+
+}
+
+function removeClasses(element) {
+
+	for (let c = 0; c < element.classList.length; c++) {
+
+		let classname = element.classList[c];
+		if (classname.includes("scroll")) {
+			element.classList.remove(classname);
+		} else if (classname.includes("modal-open") || classname.includes("modal-active")) {
+			element.classList.remove(classname);
+		}
 
 	}
 
@@ -21,7 +48,9 @@ function removeOverflow(element, computed) {
 
 	const computed_style = getComputedStyle(element);
 
-	if (element.style["overflow"] === "hidden" || computed_style.getPropertyValue("overflow") !== "auto") {
+	if (element.style["overflow"] === "hidden") {
+		element.style.setProperty("overflow", "auto", "important");
+	} else if computed_style.getPropertyValue("overflow") === "hidden") {
 		element.style.setProperty("overflow", "auto", "important");
 	}
 
@@ -47,6 +76,26 @@ function removePointerEvents(element) {
 
 	if (element.style["pointerEvents"] === "none" || computed_style.getPropertyValue("pointer-events") !== "auto") {
 		element.style.setProperty("pointer-events", "auto", "important");
+	}
+
+}
+
+function removeTouchAction(element) {
+
+	const computed_style = getComputedStyle(element);
+
+	if (element.style["touchAction"] === "none" || computed_style.getPropertyValue("touch-action") !== "auto") {
+		element.style.setProperty("touch-action", "auto", "important");
+	}
+
+}
+
+function removeVisibility(element) {
+
+	const computed_style = getComputedStyle(element);
+
+	if (element.style["visibility"] === "hidden" || computed_style.getPropertyValue("visibility") === "hidden") {
+		element.style.setProperty("visibility", "visible", "important");
 	}
 
 }
@@ -127,9 +176,12 @@ getEnabled().then((enabled) => {
 			// Remove static CSS properties
 			document.querySelectorAll("*").forEach((element) => {
 
+				removeClasses(element);
 				removeOverflow(element);
 				removeFilters(element);
 				removePointerEvents(element);
+				removeTouchAction(element);
+				removeVisibility(element);
 
 			});
 
@@ -141,9 +193,14 @@ getEnabled().then((enabled) => {
 			for (const mutation of mutations) {
 
 				if (mutation.type === "attributes") {
+
+					removeClasses(mutation.target);
 					removeOverflow(mutation.target);
 					removeFilters(mutation.target);
 					removePointerEvents(mutation.target);
+					removeTouchAction(mutation.target);
+					removeVisibility(mutation.target);
+
 				}
 
 			}
